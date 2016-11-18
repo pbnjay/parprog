@@ -109,8 +109,21 @@ func (v *Viz) redrawLocked() {
 	if ymax > h {
 		ymax = h
 	}
-	s := time.Now().Truncate(time.Second).Sub(v.started).String()
+	now := time.Now().Truncate(time.Second)
+	s := now.Sub(v.started).String()
 	s = "Running for " + s
+	bestETA := time.Time{}
+	for _, r := range v.readers {
+		if fs, ok := r.View.(*fileWrapper); ok {
+			if fs.eta.After(now) && fs.eta.After(bestETA) {
+				bestETA = fs.eta
+			}
+		}
+	}
+	if !bestETA.IsZero() {
+		s += ", current ETA " + bestETA.Truncate(time.Second).Sub(now).String()
+	}
+
 	for i, c := range s {
 		if i >= w {
 			break

@@ -53,6 +53,7 @@ type fileWrapper struct {
 	f       *os.File
 	start   time.Time
 	elapsed time.Duration
+	eta     time.Time
 }
 
 func (w *fileWrapper) done() {
@@ -80,7 +81,12 @@ func (w *fileWrapper) readStatus() string {
 		w.elapsed = time.Now().Truncate(time.Second).Sub(w.start)
 		return fmt.Sprintf("%s %6.2f%%", w.elapsed.String(), 100.0)
 	}
-	return fmt.Sprintf("%s %6.2f%%",
-		time.Now().Truncate(time.Second).Sub(w.start).String(),
-		float64(pos)/w.sz)
+
+	pct := float64(pos) / w.sz
+	totalElapsed := time.Now().Truncate(time.Second).Sub(w.start)
+	totalETA := time.Duration(totalElapsed.Seconds()/(pct/100.0)) * time.Second
+	w.eta = w.start.Add(totalETA)
+	remaining := totalETA - totalElapsed
+
+	return fmt.Sprintf("%s %6.2f%%", remaining.String(), pct)
 }
